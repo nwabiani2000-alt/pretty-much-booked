@@ -1,0 +1,191 @@
+/* ============================================
+   PRETTY MUCH BOOKED - GLOBAL STYLES
+   Source: docs/design-system/globals.css
+   + research-pack motion (slides / overshoot)
+   ============================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-neutral-bg text-neutral-text font-sans antialiased;
+  overscroll-behavior-y: none;
+}
+
+@layer components {
+  .btn-primary {
+    @apply flex h-btn-primary w-full items-center justify-center gap-2 rounded-button
+           bg-pmb-700 text-body-bold text-white
+           transition-all duration-fast ease-premium
+           active:scale-[0.97] active:bg-pmb-800
+           disabled:cursor-not-allowed disabled:bg-neutral-input disabled:text-neutral-muted;
+    background-image: none !important;
+  }
+
+  .btn-secondary {
+    @apply flex min-h-touch items-center justify-center text-body-bold text-pmb-700
+           underline underline-offset-4 transition-opacity active:opacity-70;
+  }
+
+  .btn-ghost {
+    @apply rounded-button px-4 py-2 text-small text-neutral-secondary
+           transition-colors duration-fast hover:bg-neutral-border;
+  }
+
+  .btn-pay {
+    @apply flex h-btn-primary w-full items-center justify-center gap-2 rounded-button
+           bg-neutral-text text-body-bold text-white
+           transition-all duration-fast ease-premium
+           active:scale-[0.97] active:bg-black
+           disabled:cursor-not-allowed disabled:bg-neutral-input disabled:text-neutral-muted;
+    background-image: none !important;
+  }
+
+  /* Hard rule: shadow-card only — no card borders */
+  .card {
+    @apply rounded-card bg-neutral-card p-card shadow-card;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-normal ease-premium
+           hover:-translate-y-0.5 hover:shadow-card-hover;
+  }
+
+  .pro-card {
+    @apply card cursor-pointer transition-transform duration-fast ease-premium
+           active:scale-[0.98];
+  }
+
+  .input {
+    @apply h-input w-full border-0 border-b border-neutral-input bg-transparent
+           text-body text-neutral-text placeholder:text-neutral-muted
+           transition-colors duration-fast focus:border-pmb-700 focus:outline-none;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .input-error {
+    @apply input animate-shake border-error;
+  }
+
+  .input-success {
+    @apply input border-success;
+  }
+
+  .input-label {
+    @apply mb-1 block text-small text-neutral-secondary;
+  }
+
+  .badge-gold {
+    @apply inline-flex items-center rounded-badge bg-gold-500 px-2.5 py-1
+           text-caption font-semibold text-white;
+  }
+
+  .badge-purple {
+    @apply inline-flex items-center rounded-badge bg-pmb-700 px-2.5 py-1
+           text-caption font-semibold text-white;
+  }
+
+  .progress-bar {
+    @apply h-1 w-full overflow-hidden rounded-full bg-neutral-border;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full bg-pmb-700 transition-all duration-slow ease-premium;
+  }
+
+  .skeleton {
+    @apply animate-skeleton rounded bg-neutral-border;
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200px 100%;
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Compat aliases used by earlier polish pass */
+  .glass-emergency {
+    @apply glass;
+    border-color: rgba(212, 175, 55, 0.35);
+  }
+
+  .input-underline {
+    @apply input pt-5;
+  }
+  .input-underline::placeholder {
+    color: transparent;
+  }
+  .input-underline.is-error {
+    @apply input-error;
+  }
+  .input-underline.is-success {
+    @apply input-success;
+  }
+}
+
+@layer utilities {
+  .stagger-1 {
+    animation-delay: 0ms;
+  }
+  .stagger-2 {
+    animation-delay: 50ms;
+  }
+  .stagger-3 {
+    animation-delay: 100ms;
+  }
+  .stagger-4 {
+    animation-delay: 150ms;
+  }
+  .stagger-5 {
+    animation-delay: 200ms;
+  }
+  .stagger-6 {
+    animation-delay: 250ms;
+  }
+
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none {
+    @apply no-scrollbar;
+  }
+
+  .pressable {
+    @apply transition-transform duration-fast ease-premium;
+  }
+  .pressable:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+:focus-visible {
+  outline: 2px solid #5b2c87;
+  outline-offset: 2px;
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="number"] {
+  -webkit-appearance: none;
+  appearance: none;
+}

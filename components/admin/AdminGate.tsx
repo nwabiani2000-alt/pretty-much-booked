@@ -1,0 +1,148 @@
+"use client";
+
+import { Button } from "@/components/ui/Button";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
+
+type Session = { authenticated: boolean; demo: boolean };
+
+export function AdminGate({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [session, setSession] = useState<Session | null>(null);
+  const [secret, setSecret] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const isLogin = pathname === "/admin/login";
+
+  useEffect(() => {
+    fetch("/api/admin/session")
+      .then((r) => r.json())
+      .then((data: Session) => setSession(data))
+      .catch(() => setSession({ authenticated: false, demo: true }));
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!session) return;
+    if (!session.authenticated && !isLogin) {
+      router.replace("/admin/login");
+    } else if (isLogin && session.authenticated) {
+      router.replace("/admin");
+    }
+  }, [session, isLogin, router]);
+
+  async function login() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret }),
+      });
+      if (!res.ok) {
+        setError("Wrong secret");
+        return;
+      }
+      setSession({ authenticated: true, demo: (await res.json()).demo });
+      router.replace("/admin");
+    } catch {
+      setError("Could not sign in");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function logout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    setSession({ authenticated: false, demo: session?.demo ?? true });
+    router.replace("/admin/login");
+  }
+
+  if (!session) {
+    return (
+      <main className="mx-auto max-w-md space-y-4 bg-neutral-bg px-5 pt-20">
+        <div className="skeleton h-8 w-40" />
+        <div className="skeleton h-24 w-full rounded-card" />
+      </main>
+    );
+  }
+
+  if (!session.authenticated && !isLogin) {
+    return (
+      <main className="mx-auto max-w-md px-5 pt-20">
+        <p className="text-small text-neutral-secondary">Redirecting…</p>
+      </main>
+    );
+  }
+
+  if (isLogin) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-neutral-bg px-5 pb-12 pt-6">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="text-small text-neutral-secondary no-underline">
+            Customer app
+          </Link>
+          <Image
+            src="/images/logo-icon-purple.png"
+            alt=""
+            width={28}
+            height={28}
+          />
+        </div>
+        <div className="card mt-10">
+          <p className="text-caption font-semibold uppercase tracking-wide text-pmb-700">
+            Admin
+          </p>
+          <h1 className="mt-2 text-display text-neutral-text">Sign in</h1>
+          <p className="mt-2 text-small text-neutral-secondary">
+            Enter the admin secret
+            {session.demo ? " (demo: pmb-admin-demo)" : ""}.
+          </p>
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void login();
+            }}
+            placeholder="Admin secret"
+            className="input-underline mt-8 w-full"
+            autoComplete="current-password"
+          />
+          {error ? (
+            <p className="mt-3 text-small text-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="mt-10">
+            <Button type="button" disabled={busy} onClick={() => void login()}>
+              {busy ? "…" : "Continue"}
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="mx-auto flex max-w-md items-center justify-end gap-3 px-5 pt-2">
+        {session.demo ? (
+          <span className="text-caption text-neutral-muted">Demo gate</span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="text-caption text-neutral-secondary"
+        >
+          Sign out
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
