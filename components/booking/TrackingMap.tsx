@@ -125,7 +125,7 @@ function MapboxGlMap({
   startLngLat,
 }: TrackingMapProps & { accessToken: string }) {
   const DEST = destLngLat ?? LONDON_DEST;
-  const START = startLngLat ?? LONDON_START;
+  void (startLngLat ?? LONDON_START);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("mapbox-gl").Map | null>(null);
   const proMarkerRef = useRef<import("mapbox-gl").Marker | null>(null);

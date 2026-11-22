@@ -53,6 +53,9 @@ export type StoredBooking = {
   confirmedAt?: string;
   cancelledAt?: string;
   waitlistJoined?: boolean;
+  /** Opaque server token — required for /api/bookings/[id] when not signed in */
+  accessToken?: string;
+  customerId?: string;
 };
 
 const keyFor = (bookingId: string) => `pmb_booking_${bookingId}`;

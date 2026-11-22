@@ -12,6 +12,7 @@ import { Button, TextLink } from "@/components/ui/Button";
 import {
   cancelBooking,
   loadBooking,
+  saveBooking,
   setTrackingStatus,
   updateBooking,
   TIMELINE_STEPS,
@@ -20,6 +21,7 @@ import {
   type StoredBooking,
   type TrackingStatus,
 } from "@/lib/booking-storage";
+import { maskPhone } from "@/lib/security/privacy";
 import { formatDuration } from "@/lib/services";
 import { tipPresetsGbp } from "@/lib/tips";
 import { ensureDemoBooking } from "@/lib/tracking-demo";
@@ -72,17 +74,86 @@ export function TrackingClient({ bookingId }: TrackingClientProps) {
   const queryStatus = searchParams.get("status") as TrackingStatus | null;
 
   useEffect(() => {
-    let data = loadBooking(bookingId);
-    if (!data && bookingId === "bk_demo_track") {
-      data = ensureDemoBooking(bookingId);
+    let cancelled = false;
+
+    async function load() {
+      let data = loadBooking(bookingId);
+      if (!data && bookingId === "bk_demo_track") {
+        data = ensureDemoBooking(bookingId);
+      }
+
+      // IDOR defense: if we don't have a local session booking, try API with
+      // access_token from query — without token the API returns 403.
+      if (!data) {
+        const token = searchParams.get("access_token");
+        if (token) {
+          try {
+            const res = await fetch(
+              `/api/bookings/${encodeURIComponent(bookingId)}?access_token=${encodeURIComponent(token)}`
+            );
+            if (res.status === 403 || res.status === 401) {
+              if (!cancelled) {
+                setBooking(null);
+                setLoaded(true);
+              }
+              return;
+            }
+            if (res.ok) {
+              const json = (await res.json()) as {
+                booking?: {
+                  id: string;
+                  address_text: string;
+                  total_price: number;
+                  deposit_amount: number;
+                  scheduled_at: string;
+                  pro_id: string;
+                  service_id: string;
+                  is_emergency: boolean;
+                  status: string;
+                };
+              };
+              if (json.booking) {
+                data = {
+                  id: json.booking.id,
+                  proId: json.booking.pro_id,
+                  serviceId: json.booking.service_id,
+                  proName: "Your pro",
+                  serviceName: "Service",
+                  scheduledAt: json.booking.scheduled_at,
+                  address: json.booking.address_text,
+                  isEmergency: json.booking.is_emergency,
+                  servicePrice: json.booking.total_price,
+                  emergencyFee: 0,
+                  durationMins: 60,
+                  totalPrice: json.booking.total_price,
+                  depositAmount: json.booking.deposit_amount,
+                  accessToken: token,
+                  trackingStatus: "pending",
+                };
+                saveBooking(data);
+              }
+            }
+          } catch {
+            /* keep null */
+          }
+        }
+      }
+
+      const valid = TRACKING_STATUSES.some((s) => s.id === queryStatus);
+      if (data && valid && queryStatus) {
+        data = setTrackingStatus(bookingId, queryStatus) ?? data;
+      }
+      if (!cancelled) {
+        setBooking(data);
+        setLoaded(true);
+      }
     }
-    const valid = TRACKING_STATUSES.some((s) => s.id === queryStatus);
-    if (data && valid && queryStatus) {
-      data = setTrackingStatus(bookingId, queryStatus) ?? data;
-    }
-    setBooking(data);
-    setLoaded(true);
-  }, [bookingId, queryStatus]);
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingId, queryStatus, searchParams]);
 
   const status: TrackingStatus = booking?.trackingStatus ?? "pending";
 
@@ -274,6 +345,11 @@ export function TrackingClient({ bookingId }: TrackingClientProps) {
         <p className="mt-1 text-base text-black">{whenLabel}</p>
         <p className="mt-4 text-sm text-brand-muted">Where</p>
         <p className="mt-1 text-base text-black">{booking.address}</p>
+        {status === "pending" && booking.proPhone && (
+          <p className="mt-6 text-sm text-brand-muted">
+            Pro phone {maskPhone(booking.proPhone)} (shown after confirm)
+          </p>
+        )}
         {status !== "pending" && booking.proPhone && (
           <a
             href={`tel:${booking.proPhone}`}

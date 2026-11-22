@@ -1,23 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function DemoCheckoutPage() {
+function DemoCheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const target = searchParams.get("target") || "checkout";
   const market = searchParams.get("market") || "london";
-  
+
   useEffect(() => {
-    // Set market in localStorage
     if (market === "lagos") {
       localStorage.setItem("pmb_market", "lagos");
     } else {
       localStorage.setItem("pmb_market", "london");
     }
-    
-    // Seed a demo booking for checkout
+
     const booking = {
       id: "demo-1",
       proId: "1",
@@ -49,16 +47,31 @@ export default function DemoCheckoutPage() {
       depositPaid: target === "confirmation",
       trackingStatus: target === "confirmation" ? "pending" : undefined,
     };
-    
+
     sessionStorage.setItem(`pmb_booking_demo-1`, JSON.stringify(booking));
-    
-    // Redirect to target
+
     if (target === "confirmation") {
       router.push("/booking/demo-1/confirmation");
     } else {
       router.push("/booking/demo-1/checkout");
     }
   }, [router, target, market]);
-  
-  return <div style={{ padding: "20px", textAlign: "center" }}>Loading demo {target} for {market}...</div>;
+
+  return (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      Loading demo {target} for {market}...
+    </div>
+  );
+}
+
+export default function DemoCheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: "20px", textAlign: "center" }}>Loading…</div>
+      }
+    >
+      <DemoCheckoutInner />
+    </Suspense>
+  );
 }

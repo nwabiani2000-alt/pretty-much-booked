@@ -48,17 +48,29 @@ export type ApiBooking = {
   created_at?: string;
   updated_at?: string;
   mode?: ApiMode;
+  /** Opaque token — returned once at create; required for mock IDOR protection. */
+  access_token?: string;
 };
 
 /** In-memory bookings when Supabase empty / unavailable. */
 const mockBookings = new Map<string, ApiBooking>();
 
+/** Strip secrets before returning lists to clients. */
+export function publicBooking(b: ApiBooking): Omit<ApiBooking, "access_token"> {
+  const rest = { ...b };
+  delete rest.access_token;
+  return rest;
+}
+
 function seedMockBookings(): void {
   if (mockBookings.size > 0) return;
+  // Lazy import avoided in seed — token minted on first get via ensure below.
   const now = new Date();
+  const id = "bk_mock_1";
+  const customer_id = "cust_mock";
   const b: ApiBooking = {
-    id: "bk_mock_1",
-    customer_id: "cust_mock",
+    id,
+    customer_id,
     pro_id: "1",
     service_id: "box-braids",
     status: "pending",
@@ -72,6 +84,7 @@ function seedMockBookings(): void {
     notes: null,
     created_at: new Date().toISOString(),
     mode: "mock",
+    access_token: `seed.${id}.${customer_id}`,
   };
   mockBookings.set(b.id, b);
 }
@@ -275,16 +288,22 @@ export async function listBookings(opts?: {
   customerId?: string;
   proId?: string;
 }): Promise<{ data: ApiBooking[]; mode: ApiMode }> {
+  // Prefer anon/user-scoped client so RLS applies. Service role only when
+  // caller already authorized server-side with an explicit filter.
   if (isSupabaseConfigured()) {
-    const sb = getSupabaseServiceRole() ?? getSupabaseServer();
+    const sb = getSupabaseServer() ?? getSupabaseServiceRole();
     if (sb) {
       let q = sb.from("bookings").select("*").order("scheduled_at", {
         ascending: false,
       });
       if (opts?.customerId) q = q.eq("customer_id", opts.customerId);
       if (opts?.proId) q = q.eq("pro_id", opts.proId);
+      // Refuse unscoped live queries — prevents full-table IDOR via service role.
+      if (!opts?.customerId && !opts?.proId) {
+        return { mode: "live", data: [] };
+      }
       const { data, error } = await q;
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         return {
           mode: "live",
           data: data.map((row) => ({
@@ -314,14 +333,63 @@ export async function listBookings(opts?: {
   }
 
   seedMockBookings();
-  let list = [...mockBookings.values()];
+  let list = Array.from(mockBookings.values());
   if (opts?.customerId) {
     list = list.filter((b) => b.customer_id === opts.customerId);
   }
   if (opts?.proId) {
     list = list.filter((b) => b.pro_id === opts.proId);
   }
+  // Unscoped mock list also refused.
+  if (!opts?.customerId && !opts?.proId) {
+    return { mode: "mock", data: [] };
+  }
   return { mode: "mock", data: list };
+}
+
+export async function getBookingById(
+  id: string
+): Promise<{ data: ApiBooking | null; mode: ApiMode }> {
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseServer() ?? getSupabaseServiceRole();
+    if (sb) {
+      const { data, error } = await sb
+        .from("bookings")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (!error && data) {
+        return {
+          mode: "live",
+          data: {
+            id: String(data.id),
+            customer_id: String(data.customer_id),
+            pro_id: String(data.pro_id),
+            service_id: String(data.service_id),
+            status: data.status,
+            is_emergency: Boolean(data.is_emergency),
+            scheduled_at: data.scheduled_at,
+            address: (data.address as { lat: number; lng: number }) ?? {
+              lat: 0,
+              lng: 0,
+            },
+            address_text: data.address_text,
+            total_price: Number(data.total_price),
+            deposit_amount: Number(data.deposit_amount),
+            deposit_paid: Boolean(data.deposit_paid),
+            notes: data.notes,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            mode: "live",
+          },
+        };
+      }
+    }
+  }
+
+  seedMockBookings();
+  const b = mockBookings.get(id) ?? null;
+  return { mode: "mock", data: b };
 }
 
 export type CreateBookingInput = {
@@ -341,6 +409,27 @@ export type CreateBookingInput = {
 export async function createBooking(
   input: CreateBookingInput
 ): Promise<{ data: ApiBooking | null; mode: ApiMode; error?: string }> {
+  const { mintBookingAccessToken } = await import(
+    "@/lib/security/auth-context"
+  );
+  const { calculateBookingPrice } = await import("@/lib/security/pricing");
+
+  const priced = await calculateBookingPrice({
+    proId: input.pro_id,
+    serviceId: input.service_id,
+    isEmergency: input.is_emergency,
+  });
+  if (!priced) {
+    return {
+      data: null,
+      mode: "mock",
+      error: "Invalid pro_id or service_id — cannot price booking",
+    };
+  }
+  // Server-side amounts win; ignore client totals.
+  const total_price = priced.total_price;
+  const deposit_amount = priced.deposit_amount;
+
   if (isSupabaseConfigured()) {
     const sb = getSupabaseServiceRole();
     if (sb) {
@@ -353,8 +442,8 @@ export async function createBooking(
         scheduled_at: input.scheduled_at,
         address: input.address ?? { lat: 51.52, lng: -0.08 },
         address_text: input.address_text,
-        total_price: input.total_price,
-        deposit_amount: input.deposit_amount,
+        total_price,
+        deposit_amount,
         deposit_paid: Boolean(input.deposit_paid),
         notes: input.notes ?? null,
       };
@@ -373,11 +462,13 @@ export async function createBooking(
           .select("*")
           .single();
         if (!error && data) {
+          const id = String(data.id);
+          const customer_id = String(data.customer_id);
           return {
             mode: "live",
             data: {
-              id: String(data.id),
-              customer_id: String(data.customer_id),
+              id,
+              customer_id,
               pro_id: String(data.pro_id),
               service_id: String(data.service_id),
               status: data.status,
@@ -392,17 +483,23 @@ export async function createBooking(
               created_at: data.created_at,
               updated_at: data.updated_at,
               mode: "live",
+              access_token: mintBookingAccessToken(id, customer_id),
             },
           };
+        }
+        if (error) {
+          return { data: null, mode: "live", error: "Could not create booking" };
         }
       }
     }
   }
 
   seedMockBookings();
+  const customer_id = input.customer_id || "cust_mock";
+  const id = `bk_${Date.now().toString(36)}`;
   const booking: ApiBooking = {
-    id: `bk_${Date.now().toString(36)}`,
-    customer_id: input.customer_id || "cust_mock",
+    id,
+    customer_id,
     pro_id: input.pro_id,
     service_id: input.service_id,
     status: "pending",
@@ -410,13 +507,14 @@ export async function createBooking(
     scheduled_at: input.scheduled_at,
     address: input.address ?? { lat: 51.52, lng: -0.08 },
     address_text: input.address_text,
-    total_price: input.total_price,
-    deposit_amount: input.deposit_amount,
+    total_price,
+    deposit_amount,
     deposit_paid: Boolean(input.deposit_paid),
     notes: input.notes ?? null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     mode: "mock",
+    access_token: mintBookingAccessToken(id, customer_id),
   };
   mockBookings.set(booking.id, booking);
   return { mode: "mock", data: booking };

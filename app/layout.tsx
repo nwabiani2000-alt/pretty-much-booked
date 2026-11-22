@@ -1,3 +1,4 @@
+import { CookieConsent } from "@/components/CookieConsent";
 import { MarketProvider } from "@/components/market/MarketProvider";
 import type { Metadata } from "next";
 import { Poppins, Syne } from "next/font/google";
@@ -38,7 +39,10 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${syne.variable} font-sans antialiased`}
       >
-        <MarketProvider>{children}</MarketProvider>
+        <MarketProvider>
+          {children}
+          <CookieConsent />
+        </MarketProvider>
       </body>
     </html>
   );

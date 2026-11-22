@@ -32,7 +32,7 @@ export function ConfirmationClient({ bookingId }: ConfirmationClientProps) {
   const [booking, setBooking] = useState<StoredBooking | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(CONFIRM_SECONDS);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast] = useState<string | null>(null);
 
   useEffect(() => {
     setBooking(loadBooking(bookingId));

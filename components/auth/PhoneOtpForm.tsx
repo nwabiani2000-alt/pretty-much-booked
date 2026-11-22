@@ -153,7 +153,7 @@ export function PhoneOtpForm({ mode }: PhoneOtpFormProps) {
               state={error ? "error" : "default"}
               errorText={error || undefined}
             />
-            <Button type="button" disabled={busy} onClick={sendCode}>
+            <Button type="button" disabled={busy} onClick={() => void sendCode()}>
               {busy ? "…" : "Send code"}
             </Button>
           </div>

@@ -1,55 +1,84 @@
 import { corsPreflight, withCors } from "@/lib/cors";
+import {
+  clientKey,
+  rateLimit,
+  rateLimitHeaders,
+} from "@/lib/security/rate-limit";
+import { otpVerifySchema } from "@/lib/security/schemas";
 import { getSupabaseServer, isSupabaseConfigured } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
-
-type Body = { phone?: string; token?: string };
 
 /**
  * POST /api/auth/otp/verify
  * Live: verifyOtp phone/sms.
- * Mock: accept 000000 (or any 6 digits) when keys missing.
+ * Mock: accept 000000 when keys missing.
+ * Rate limit: 5 / 15 min / IP.
  */
 export async function POST(req: NextRequest) {
-  let body: Body = {};
-  try {
-    body = (await req.json()) as Body;
-  } catch {
-    return withCors(
-      NextResponse.json({ error: "Invalid JSON" }, { status: 400 }),
-      req
-    );
-  }
-
-  const phone = body.phone?.trim();
-  const token = body.token?.trim();
-
-  if (!phone || !/^\+[1-9]\d{7,14}$/.test(phone)) {
+  const rl = rateLimit(clientKey(req, "otp:verify"), 5, 15 * 60_000);
+  const headers = rateLimitHeaders(rl);
+  if (!rl.ok) {
     return withCors(
       NextResponse.json(
-        { error: "Valid E.164 phone required" },
-        { status: 400 }
+        { error: "Too many attempts — try again later" },
+        { status: 429, headers }
       ),
       req
     );
   }
-  if (!token || !/^\d{6}$/.test(token)) {
+
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
     return withCors(
-      NextResponse.json({ error: "6-digit code required" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers }),
+      req
+    );
+  }
+
+  const parsed = otpVerifySchema.safeParse(raw);
+  if (!parsed.success) {
+    return withCors(
+      NextResponse.json(
+        { error: "Valid phone and code required" },
+        { status: 400, headers }
+      ),
+      req
+    );
+  }
+
+  const { phone, token } = parsed.data;
+  if (!/^\d{4,8}$/.test(token)) {
+    return withCors(
+      NextResponse.json(
+        { error: "Invalid code format" },
+        { status: 400, headers }
+      ),
       req
     );
   }
 
   if (!isSupabaseConfigured()) {
+    if (token !== "000000") {
+      return withCors(
+        NextResponse.json({ error: "Invalid code" }, { status: 401, headers }),
+        req
+      );
+    }
     return withCors(
-      NextResponse.json({
-        mode: "mock",
-        verified: true,
-        session: {
-          phone,
-          userId: `mock_${phone.replace(/\D/g, "").slice(-8)}`,
-          mode: "mock" as const,
+      NextResponse.json(
+        {
+          mode: "mock",
+          verified: true,
+          session: {
+            phone,
+            userId: `mock_${phone.replace(/\D/g, "").slice(-8)}`,
+            mode: "mock" as const,
+          },
         },
-      }),
+        { headers }
+      ),
       req
     );
   }
@@ -57,7 +86,10 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseServer();
   if (!supabase) {
     return withCors(
-      NextResponse.json({ error: "Supabase unavailable" }, { status: 503 }),
+      NextResponse.json(
+        { error: "Something went wrong" },
+        { status: 503, headers }
+      ),
       req
     );
   }
@@ -71,22 +103,25 @@ export async function POST(req: NextRequest) {
   if (error) {
     console.error("[otp/verify]", error.message);
     return withCors(
-      NextResponse.json({ error: error.message }, { status: 401 }),
+      NextResponse.json({ error: "Invalid code" }, { status: 401, headers }),
       req
     );
   }
 
   return withCors(
-    NextResponse.json({
-      mode: "live",
-      verified: true,
-      session: {
-        phone,
-        userId: data.user?.id ?? "unknown",
-        mode: "live" as const,
-        accessToken: data.session?.access_token,
+    NextResponse.json(
+      {
+        mode: "live",
+        verified: true,
+        session: {
+          phone,
+          userId: data.user?.id ?? "unknown",
+          mode: "live" as const,
+          accessToken: data.session?.access_token,
+        },
       },
-    }),
+      { headers }
+    ),
     req
   );
 }
