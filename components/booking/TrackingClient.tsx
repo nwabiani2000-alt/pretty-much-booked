@@ -162,7 +162,7 @@ export function TrackingClient({ bookingId }: TrackingClientProps) {
         >
           Open demo tracking
         </TextLink>
-        <Link href="/" className="mt-4 block text-sm text-brand-muted">
+        <Link href="/book" className="mt-4 block text-sm text-brand-muted">
           Home
         </Link>
       </main>

@@ -186,7 +186,7 @@ export default function ProfilePage() {
       </div>
 
       <p className="mt-8 text-center text-caption text-neutral-muted">
-        <Link href="/" className="text-neutral-secondary no-underline">
+        <Link href="/book" className="text-neutral-secondary no-underline">
           Home
         </Link>
       </p>

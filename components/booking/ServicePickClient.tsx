@@ -48,7 +48,7 @@ export function ServicePickClient({ category, label }: ServicePickClientProps) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-neutral-bg px-5 pb-28 pt-5">
       <div className="flex items-center justify-between gap-2">
-        <Link href="/" className="btn-secondary no-underline">
+        <Link href="/book" className="btn-secondary no-underline">
           Back
         </Link>
         <MarketToggle />

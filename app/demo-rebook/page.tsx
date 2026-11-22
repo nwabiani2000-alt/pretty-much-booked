@@ -21,7 +21,7 @@ export default function DemoRebookPage() {
     localStorage.setItem("pmb_saved_look", JSON.stringify(savedLook));
     
     // Redirect to home
-    router.push("/");
+    router.push("/book");
   }, [router]);
   
   return <div style={{ padding: "20px", textAlign: "center" }}>Loading rebook demo...</div>;

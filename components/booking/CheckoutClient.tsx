@@ -274,7 +274,7 @@ export function CheckoutClient({ bookingId }: CheckoutClientProps) {
     return (
       <main className="mx-auto max-w-md bg-neutral-bg px-5 py-12">
         <p className="text-small text-neutral-secondary">Booking not found.</p>
-        <Link href="/" className="btn-secondary mt-4 no-underline">
+        <Link href="/book" className="btn-secondary mt-4 no-underline">
           Home
         </Link>
       </main>

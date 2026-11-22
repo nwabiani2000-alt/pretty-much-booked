@@ -99,9 +99,9 @@ const config: Config = {
           "sans-serif",
         ],
         display: [
+          "var(--font-syne)",
           "var(--font-poppins)",
           "system-ui",
-          "-apple-system",
           "sans-serif",
         ],
       },

@@ -1,5 +1,5 @@
-import { HomeClient } from "@/components/booking/HomeClient";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 export default function HomePage() {
-  return <HomeClient />;
+  return <LandingPage />;
 }

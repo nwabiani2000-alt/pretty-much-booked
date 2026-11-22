@@ -102,7 +102,7 @@ export function PhoneOtpForm({ mode }: PhoneOtpFormProps) {
       }
       const session = data.session as AuthSession;
       saveAuthSession(session);
-      router.push("/");
+      router.push("/book");
     } catch {
       setError("Could not verify code");
     } finally {
@@ -118,7 +118,7 @@ export function PhoneOtpForm({ mode }: PhoneOtpFormProps) {
   return (
     <main className="mx-auto min-h-screen w-full max-w-md bg-neutral-bg px-5 pb-12 pt-5">
       <div className="flex items-center justify-between">
-        <Link href="/" className="btn-secondary no-underline">
+        <Link href="/book" className="btn-secondary no-underline">
           Back
         </Link>
         <Image

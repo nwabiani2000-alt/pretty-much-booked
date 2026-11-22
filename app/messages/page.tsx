@@ -46,7 +46,7 @@ function MessagesInner() {
     <main className="mx-auto min-h-screen w-full max-w-md bg-neutral-bg px-5 pb-28 pt-8">
       <div className="flex items-center justify-between">
         <h1 className="text-display text-neutral-text">Messages</h1>
-        <Link href="/" className="text-small text-neutral-secondary no-underline">
+        <Link href="/book" className="text-small text-neutral-secondary no-underline">
           Home
         </Link>
       </div>

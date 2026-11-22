@@ -5,7 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { href: "/", label: "Home", match: (p: string) => p === "/" },
+  {
+    href: "/book",
+    label: "Home",
+    match: (p: string) => p === "/book" || p.startsWith("/book/"),
+  },
   {
     href: "/bookings/bk_demo_track",
     label: "Bookings",
@@ -32,9 +36,9 @@ type BottomNavProps = {
 /** Research pack §9 — ≤4 tabs + center floating Book Now. */
 export function BottomNav({
   showBook = true,
-  bookHref = "/",
+  bookHref = "/book",
 }: BottomNavProps) {
-  const pathname = usePathname() || "/";
+  const pathname = usePathname() || "/book";
 
   return (
     <nav

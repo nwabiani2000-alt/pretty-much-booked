@@ -1,12 +1,18 @@
 import { MarketProvider } from "@/components/market/MarketProvider";
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Poppins, Syne } from "next/font/google";
 import "./globals.css";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-poppins",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-syne",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +35,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} font-sans antialiased`}>
+      <body
+        className={`${poppins.variable} ${syne.variable} font-sans antialiased`}
+      >
         <MarketProvider>{children}</MarketProvider>
       </body>
     </html>
