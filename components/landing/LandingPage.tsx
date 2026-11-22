@@ -35,51 +35,20 @@ type SocialId = (typeof SOCIALS)[number]["id"];
 
 export function LandingPage() {
   return (
-    <main className="landing-root relative min-h-[100dvh] overflow-hidden">
-      {/* Full-bleed hero plane */}
-      <div className="absolute inset-0" aria-hidden>
-        <div className="absolute inset-0 bg-[#0F0A14]" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 85% 70% at 70% 35%, rgba(91,44,135,0.45), transparent 58%), radial-gradient(ellipse 60% 50% at 15% 80%, rgba(212,175,55,0.16), transparent 55%), linear-gradient(160deg, #1A1224 0%, #0F0A14 42%, #241433 100%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(118deg, transparent 0 22px, rgba(212,175,55,0.06) 22px 23px)",
-          }}
-        />
-        <div className="landing-grain absolute inset-0 opacity-50" />
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gold-500" />
-      </div>
-
-      <div className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col justify-between px-5 pb-8 pt-8 sm:px-8 sm:pb-10 sm:pt-10">
-        <div className="landing-visual flex justify-start">
-          <Image
-            src="/images/logo-icon-white-on-purple.png"
-            alt="Pretty Much Booked"
-            width={220}
-            height={220}
-            priority
-            className="landing-logo h-auto w-[min(42vw,168px)] rounded-[28%] shadow-[0_12px_40px_rgba(0,0,0,0.35)]"
-          />
-        </div>
-
-        <section className="landing-copy flex flex-1 flex-col justify-center py-6 sm:py-10">
-          <p className="landing-brand font-display text-[clamp(2.75rem,10vw,5.25rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-white">
+    <main className="landing-root relative min-h-[100dvh] bg-neutral-bg">
+      <div className="mx-auto grid min-h-[100dvh] w-full max-w-6xl lg:grid-cols-2">
+        {/* Copy column — brand, headline, sentence, CTA group */}
+        <section className="relative z-10 order-2 flex flex-col justify-center px-screen py-10 sm:px-10 sm:py-14 lg:order-1 lg:px-14 lg:py-16">
+          <p className="landing-brand font-display text-[clamp(2.6rem,9vw,4.75rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-neutral-text">
             Pretty Much
             <span className="mt-1 block text-gold-500">Booked</span>
           </p>
 
-          <h1 className="landing-headline mt-5 max-w-lg font-display text-[clamp(1.2rem,3.2vw,1.65rem)] font-medium leading-snug tracking-[-0.02em] text-white/95 sm:mt-6">
+          <h1 className="landing-headline mt-5 max-w-md font-display text-[clamp(1.15rem,2.8vw,1.5rem)] font-medium leading-snug tracking-[-0.02em] text-neutral-text sm:mt-6">
             Mobile beauty, booked in minutes.
           </h1>
 
-          <p className="landing-sub mt-3 max-w-md text-body text-white/65">
+          <p className="landing-sub mt-3 max-w-sm text-body text-neutral-secondary">
             Hair, nails, makeup, and lashes — pros come to you.
           </p>
 
@@ -92,7 +61,7 @@ export function LandingPage() {
             </Link>
 
             <nav
-              className="landing-socials flex flex-wrap items-center gap-x-1 gap-y-1"
+              className="landing-socials flex flex-wrap items-center gap-x-1 gap-y-0"
               aria-label="Social links"
             >
               {SOCIALS.map((s) => (
@@ -107,9 +76,20 @@ export function LandingPage() {
           </div>
         </section>
 
-        <p className="landing-foot text-caption text-white/40">
-          Lagos · on-demand beauty
-        </p>
+        {/* Dominant full-bleed brand mark — edge-to-edge visual plane */}
+        <div
+          className="landing-visual relative order-1 min-h-[42vh] overflow-hidden bg-pmb-700 lg:order-2 lg:min-h-[100dvh]"
+          aria-hidden
+        >
+          <Image
+            src="/images/logo-icon-white-on-purple.png"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="landing-logo object-cover object-center"
+          />
+        </div>
       </div>
     </main>
   );
@@ -125,7 +105,7 @@ function SocialLink({
   href: string;
 }) {
   const className =
-    "group inline-flex min-h-touch items-center gap-2 rounded-button px-2.5 text-small text-white/55 hover:text-gold-500";
+    "group inline-flex min-h-touch items-center gap-2 rounded-button px-2.5 text-small text-neutral-secondary hover:text-pmb-700";
 
   if (href === "#") {
     return (

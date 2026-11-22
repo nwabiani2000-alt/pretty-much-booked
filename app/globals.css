@@ -182,14 +182,9 @@ body {
   outline-offset: 2px;
 }
 
-/* --- Marketing landing (/) --- */
+/* --- Marketing landing (/) — Apple-clean, no purple gradients --- */
 .landing-root {
-  background-color: #0f0a14;
-}
-
-.landing-grain {
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-color: #fafafa;
 }
 
 .landing-brand {
@@ -209,18 +204,15 @@ body {
 }
 
 .landing-visual {
-  animation: overshoot-in 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s both;
+  animation: overshoot-in 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .landing-logo {
-  animation: fade-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.28s both;
+  animation: fade-in 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.18s both;
 }
 
-.landing-foot {
-  animation: fade-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
-}
-
-.landing-socials a {
+.landing-socials a,
+.landing-socials span {
   transition: color 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
     transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
@@ -239,8 +231,7 @@ body {
   .landing-sub,
   .landing-cta,
   .landing-visual,
-  .landing-logo,
-  .landing-foot {
+  .landing-logo {
     animation: none;
   }
 }
