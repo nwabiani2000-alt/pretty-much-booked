@@ -4,11 +4,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 type ServicePageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export default function ServicePage({ params }: ServicePageProps) {
-  const service = getServiceById(params.id);
+export default async function ServicePage({ params }: ServicePageProps) {
+  const { id } = await params;
+  const service = getServiceById(id);
   if (!service) notFound();
   return (
     <Suspense

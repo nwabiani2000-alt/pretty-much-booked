@@ -3,11 +3,11 @@ import { marketMeta, pricePros, resolveMarketQuery } from "@/lib/api-market";
 import { corsPreflight, withCors } from "@/lib/cors";
 import { NextRequest, NextResponse } from "next/server";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** GET /api/pros/[id]?market=lagos|london&currency=NGN|GBP */
 export async function GET(req: NextRequest, ctx: Ctx) {
-  const { id } = ctx.params;
+  const { id } = await ctx.params;
   const marketId = resolveMarketQuery(req.nextUrl.searchParams);
   const { data, mode } = await getPro(id);
   if (!data) {

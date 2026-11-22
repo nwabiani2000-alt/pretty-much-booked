@@ -11,10 +11,10 @@ import {
 } from "@/lib/security/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
-type Ctx = { params: Promise<{ id: string }> | { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 async function paramId(ctx: Ctx): Promise<string> {
-  const p = await Promise.resolve(ctx.params);
+  const p = await ctx.params;
   return p.id;
 }
 

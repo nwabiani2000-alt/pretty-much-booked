@@ -62,3 +62,7 @@ next-env.d.ts
 /admin-login.webp
 /booking-tracking.webp
 /pro-dashboard.webp
+
+# Supabase CLI local
+supabase/.temp/
+

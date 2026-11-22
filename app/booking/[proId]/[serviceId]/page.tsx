@@ -9,16 +9,17 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 type BookingPageProps = {
-  params: { proId: string; serviceId: string };
+  params: Promise<{ proId: string; serviceId: string }>;
 };
 
-function BookingInner({
+async function BookingInner({
   params,
 }: {
-  params: { proId: string; serviceId: string };
+  params: Promise<{ proId: string; serviceId: string }>;
 }) {
-  const pro = getProById(params.proId);
-  const service = getServiceById(params.serviceId);
+  const { proId, serviceId } = await params;
+  const pro = getProById(proId);
+  const service = getServiceById(serviceId);
 
   if (!pro || !service) notFound();
 

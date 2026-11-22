@@ -3,14 +3,16 @@ import { getProById } from "@/lib/mock-pros";
 import { notFound } from "next/navigation";
 
 type ProPageProps = {
-  params: { id: string };
-  searchParams?: { service?: string };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ service?: string }>;
 };
 
-export default function ProPage({ params, searchParams }: ProPageProps) {
-  const pro = getProById(params.id);
+export default async function ProPage({ params, searchParams }: ProPageProps) {
+  const { id } = await params;
+  const query = searchParams ? await searchParams : undefined;
+  const pro = getProById(id);
   if (!pro) notFound();
   return (
-    <ProProfileClient pro={pro} preferredServiceId={searchParams?.service} />
+    <ProProfileClient pro={pro} preferredServiceId={query?.service} />
   );
 }
