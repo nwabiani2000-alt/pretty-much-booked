@@ -5,6 +5,12 @@ import {
   mintAdminToken,
 } from "@/lib/admin-auth";
 import {
+  clearFailedAuth,
+  getClientIp,
+  isIpBlocked,
+  recordFailedAuth,
+} from "@/lib/security/ip-block";
+import {
   clientKey,
   rateLimit,
   rateLimitHeaders,
@@ -13,9 +19,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 /** POST { secret } → sets httpOnly cookie when secret matches. */
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isIpBlocked(ip)) {
+    return NextResponse.json(
+      { error: "IP temporarily blocked" },
+      { status: 403 }
+    );
+  }
+
   const rl = rateLimit(clientKey(req, "admin:login"), 5, 15 * 60_000);
   const headers = rateLimitHeaders(rl);
   if (!rl.ok) {
+    recordFailedAuth(ip, "admin_login_rate");
     return NextResponse.json(
       { error: "Too many attempts" },
       { status: 429, headers }
@@ -35,12 +50,17 @@ export async function POST(req: NextRequest) {
   const provided = body.secret?.trim() ?? "";
   const expected = getAdminSecret();
   if (!expected || !provided || provided !== expected) {
+    const { blocked, fails } = recordFailedAuth(ip, "admin_login");
     return NextResponse.json(
-      { error: "Wrong secret" },
-      { status: 401, headers }
+      {
+        error: blocked ? "IP temporarily blocked" : "Wrong secret",
+        fails,
+      },
+      { status: blocked ? 403 : 401, headers }
     );
   }
 
+  clearFailedAuth(ip);
   const token = mintAdminToken(expected);
   const res = NextResponse.json(
     {

@@ -2,7 +2,10 @@
  * Simple admin gate — cookie session when ADMIN_SECRET matches.
  * If ADMIN_SECRET unset, demo secret `pmb-admin-demo` works (dev only).
  * Edge-safe base64url helpers (middleware + Node API).
+ * Tokens embed session epoch so emergency logout invalidates them.
  */
+
+import { getAdminEpoch } from "@/lib/security/session-epoch";
 
 export const ADMIN_COOKIE = "pmb_admin_session";
 export const ADMIN_DEMO_SECRET = "pmb-admin-demo";
@@ -26,7 +29,6 @@ function fromBase64Url(s: string): string {
 export function getAdminSecret(): string {
   const fromEnv = process.env.ADMIN_SECRET?.trim();
   if (fromEnv) return fromEnv;
-  // Never allow demo secret in production.
   if (process.env.NODE_ENV === "production") {
     return "";
   }
@@ -37,9 +39,10 @@ export function isAdminDemoMode(): boolean {
   return !process.env.ADMIN_SECRET?.trim() && process.env.NODE_ENV !== "production";
 }
 
-/** Token = base64url(secret|timestamp) — scaffold auth, rotate via ADMIN_SECRET. */
+/** Token = base64url(secret|timestamp|epoch) */
 export function mintAdminToken(secret: string = getAdminSecret()): string {
-  return toBase64Url(`${secret}|${Date.now()}`);
+  const epoch = getAdminEpoch();
+  return toBase64Url(`${secret}|${Date.now()}|${epoch}`);
 }
 
 export function verifyAdminToken(
@@ -49,8 +52,14 @@ export function verifyAdminToken(
   if (!token || !secret) return false;
   try {
     const raw = fromBase64Url(token);
-    const [s] = raw.split("|");
-    return s === secret;
+    const [s, , epochStr] = raw.split("|");
+    if (s !== secret) return false;
+    const current = getAdminEpoch();
+    if (current > 0) {
+      const epoch = Number(epochStr ?? "0");
+      if (!Number.isFinite(epoch) || epoch !== current) return false;
+    }
+    return true;
   } catch {
     return false;
   }

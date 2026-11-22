@@ -1,5 +1,6 @@
 import { getBookingById } from "@/lib/api-catalog";
 import { convertFromGbp, parseMarketParam, type MarketId } from "@/lib/market";
+import { recordStripeFail } from "@/lib/security/alerts";
 import {
   resolveAuth,
   verifyBookingAccessToken,
@@ -156,6 +157,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error("[deposit]", err instanceof Error ? err.message : "Stripe error");
+    recordStripeFail(1);
     return NextResponse.json(
       { error: "Payment could not be created" },
       { status: 502, headers }

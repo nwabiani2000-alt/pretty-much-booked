@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
         paymentIntentId: intent.id,
         bookingId: intent.metadata?.bookingId,
       });
+      const { recordStripeFail } = await import("@/lib/security/alerts");
+      recordStripeFail(1);
       break;
     }
     default:

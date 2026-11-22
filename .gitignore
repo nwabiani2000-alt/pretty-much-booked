@@ -52,6 +52,9 @@ yarn-error.log*
 **/secrets/
 **/service-role*
 
+# incident / IR runtime data
+.data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

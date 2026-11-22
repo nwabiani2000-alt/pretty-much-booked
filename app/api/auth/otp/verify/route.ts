@@ -1,4 +1,11 @@
 import { corsPreflight, withCors } from "@/lib/cors";
+import { recordSupabaseQuery } from "@/lib/security/alerts";
+import {
+  clearFailedAuth,
+  getClientIp,
+  isIpBlocked,
+  recordFailedAuth,
+} from "@/lib/security/ip-block";
 import {
   clientKey,
   rateLimit,
@@ -12,12 +19,21 @@ import { NextRequest, NextResponse } from "next/server";
  * POST /api/auth/otp/verify
  * Live: verifyOtp phone/sms.
  * Mock: accept 000000 when keys missing.
- * Rate limit: 5 / 15 min / IP.
+ * Rate limit: 5 / 15 min / IP. Brute force: >10 fails → IP block.
  */
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isIpBlocked(ip)) {
+    return withCors(
+      NextResponse.json({ error: "IP temporarily blocked" }, { status: 403 }),
+      req
+    );
+  }
+
   const rl = rateLimit(clientKey(req, "otp:verify"), 5, 15 * 60_000);
   const headers = rateLimitHeaders(rl);
   if (!rl.ok) {
+    recordFailedAuth(ip, "otp_verify_rate");
     return withCors(
       NextResponse.json(
         { error: "Too many attempts — try again later" },
@@ -61,11 +77,16 @@ export async function POST(req: NextRequest) {
 
   if (!isSupabaseConfigured()) {
     if (token !== "000000") {
+      const { blocked } = recordFailedAuth(ip, "otp_verify");
       return withCors(
-        NextResponse.json({ error: "Invalid code" }, { status: 401, headers }),
+        NextResponse.json(
+          { error: blocked ? "IP temporarily blocked" : "Invalid code" },
+          { status: blocked ? 403 : 401, headers }
+        ),
         req
       );
     }
+    clearFailedAuth(ip);
     return withCors(
       NextResponse.json(
         {
@@ -94,6 +115,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  recordSupabaseQuery(1);
   const { data, error } = await supabase.auth.verifyOtp({
     phone,
     token,
@@ -102,12 +124,17 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error("[otp/verify]", error.message);
+    const { blocked } = recordFailedAuth(ip, "otp_verify");
     return withCors(
-      NextResponse.json({ error: "Invalid code" }, { status: 401, headers }),
+      NextResponse.json(
+        { error: blocked ? "IP temporarily blocked" : "Invalid code" },
+        { status: blocked ? 403 : 401, headers }
+      ),
       req
     );
   }
 
+  clearFailedAuth(ip);
   return withCors(
     NextResponse.json(
       {

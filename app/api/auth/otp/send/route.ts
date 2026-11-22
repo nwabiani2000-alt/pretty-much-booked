@@ -1,4 +1,10 @@
 import { corsPreflight, withCors } from "@/lib/cors";
+import { recordSupabaseQuery } from "@/lib/security/alerts";
+import {
+  getClientIp,
+  isIpBlocked,
+  recordFailedAuth,
+} from "@/lib/security/ip-block";
 import {
   clientKey,
   rateLimit,
@@ -15,9 +21,18 @@ import { NextRequest, NextResponse } from "next/server";
  * Rate limit: 5 / 15 min / IP (protocol login limit).
  */
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isIpBlocked(ip)) {
+    return withCors(
+      NextResponse.json({ error: "IP temporarily blocked" }, { status: 403 }),
+      req
+    );
+  }
+
   const rl = rateLimit(clientKey(req, "otp:send"), 5, 15 * 60_000);
   const headers = rateLimitHeaders(rl);
   if (!rl.ok) {
+    recordFailedAuth(ip, "otp_send_rate");
     return withCors(
       NextResponse.json(
         { error: "Too many attempts — try again later" },
@@ -76,9 +91,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  recordSupabaseQuery(1);
   const { error } = await supabase.auth.signInWithOtp({ phone });
   if (error) {
     console.error("[otp/send]", error.message);
+    recordFailedAuth(ip, "otp_send");
     const unsupported =
       /unsupported phone provider|phone provider/i.test(error.message);
     return withCors(

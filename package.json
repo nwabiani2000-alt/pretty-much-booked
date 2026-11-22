@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "secret-scan:all": "node scripts/secret-scan.mjs --all",
+    "prepare-hooks": "node scripts/install-git-hooks.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^7.1.0",
